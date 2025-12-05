@@ -1,0 +1,111 @@
+#!/usr/bin/env perl
+use v5.36;
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+
+use PerlText::CLI;
+
+my $cli = PerlText::CLI->new;
+exit $cli->run(@ARGV);
+
+__END__
+
+=head1 NAME
+
+ptx - PerlText Pro log query engine
+
+=head1 SYNOPSIS
+
+    ptx query 'status >= 500' access.log
+    ptx query 'from nginx where method == "POST" group by ip count'
+    ptx find 'error' /var/log/syslog
+    ptx extract --fields ip,status access.log
+    cat logs.jsonl | ptx query 'level == "error"'
+
+=head1 DESCRIPTION
+
+PerlText Pro is a unified, intelligent log querying and correlation engine.
+Think of it as a mini Splunk/Datadog/ELK for the CLI.
+
+=head1 COMMANDS
+
+=head2 query
+
+Execute a log query with SQL-like syntax.
+
+    ptx query [options] <query> [files...]
+
+Options:
+    --since, -s    Time filter (1h, 30m, 2d)
+    --until, -u    End time filter
+    --format, -f   Force log format (nginx, json, syslog)
+    --output, -o   Output format (table, json, csv)
+    --limit, -l    Max events to return
+    --eval, -e     Perl transformation expression
+    --verbose, -v  Verbose output
+
+=head2 find
+
+Find log entries matching a pattern.
+
+    ptx find [options] <pattern> [files...]
+
+=head2 extract
+
+Extract specific fields from logs.
+
+    ptx extract [options] [files...]
+
+Options:
+    --fields       Comma-separated list of fields
+    --pattern, -p  Custom regex with named captures
+
+=head2 formats
+
+List supported log formats.
+
+=head2 sources
+
+List available log sources.
+
+=head1 QUERY LANGUAGE
+
+=head2 Basic Filtering
+
+    status >= 500
+    method == "POST" and path matches "/api"
+    not status == 200
+
+=head2 Full Query
+
+    from nginx, k8s
+    where status in {500, 502, 503} and latency > 1000
+    group by ip
+    count
+    sort by count desc
+    limit 10
+
+=head1 EXAMPLES
+
+    # Find 5xx errors in nginx logs
+    ptx query 'status >= 500' /var/log/nginx/access.log
+
+    # Group errors by IP
+    ptx query 'status >= 500 group by ip count sort by count desc' access.log
+
+    # JSON logs from STDIN
+    cat app.jsonl | ptx query 'level == "error"' --output json
+
+    # Find pattern across files
+    ptx find 'connection refused' /var/log/syslog*
+
+=head1 AUTHOR
+
+Your Name <your.email@example.com>
+
+=head1 LICENSE
+
+This program is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut

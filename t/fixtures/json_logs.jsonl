@@ -1,0 +1,8 @@
+{"timestamp":"2025-12-04T10:00:00Z","level":"info","service":"auth","message":"User login successful","user_id":123}
+{"timestamp":"2025-12-04T10:00:01Z","level":"error","service":"auth","message":"Invalid credentials","user_id":456}
+{"timestamp":"2025-12-04T10:00:02Z","level":"warn","service":"api","message":"Rate limit approaching","request_count":950}
+{"timestamp":"2025-12-04T10:00:03Z","level":"info","service":"api","message":"Request processed","latency_ms":42,"path":"/api/users"}
+{"timestamp":"2025-12-04T10:00:04Z","level":"debug","service":"cache","message":"Cache hit","key":"user:123"}
+{"timestamp":"2025-12-04T10:00:05Z","level":"error","service":"db","message":"Connection timeout","host":"db-primary","retry_count":3}
+{"timestamp":"2025-12-04T10:00:06Z","level":"info","service":"worker","message":"Job completed","job_id":"abc123","duration_ms":1500}
+{"timestamp":"2025-12-04T10:00:07Z","level":"warn","service":"api","message":"Deprecated endpoint called","path":"/v1/legacy"}
