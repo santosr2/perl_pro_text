@@ -1,9 +1,14 @@
 package PerlText::Output::Base;
 use v5.36;
 use Moo::Role;
+use POSIX qw(strftime);
 use namespace::autoclean;
 
 requires 'format';
+
+sub format_timestamp ($self, $epoch) {
+    return strftime('%Y-%m-%d %H:%M:%S', localtime($epoch));
+}
 
 sub format_event ($self, $event) {
     if (ref $event eq 'HASH') {

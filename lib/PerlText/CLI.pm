@@ -12,6 +12,17 @@ use PerlText::Query::Executor;
 use PerlText::Output::Table;
 use PerlText::Output::JSON;
 use PerlText::Output::CSV;
+use PerlText::Output::YAML;
+use PerlText::Output::Pretty;
+use PerlText::Output::Chart;
+use PerlText::Transform::Engine;
+use PerlText::Transform::Eval;
+use PerlText::Source::File;
+use PerlText::Source::Stdin;
+use PerlText::Source::Kubernetes;
+use PerlText::Source::AWS::CloudWatch;
+use PerlText::Source::GCP::Logging;
+use PerlText::Source::Azure::Monitor;
 use namespace::autoclean;
 
 our $VERSION = '0.01';
@@ -32,32 +43,18 @@ has query_parser => (
 );
 
 sub run ($self, @argv) {
-    local @ARGV = @argv;
-
-    my ($opt, $usage) = describe_options(
-        'ptx %o <command> [args...]',
-        [ 'help|h',    'Show this help message' ],
-        [ 'version|V', 'Show version' ],
-        [],
-        [ 'Commands:' ],
-        [ '  query      Execute a log query' ],
-        [ '  extract    Extract fields with patterns' ],
-        [ '  find       Find matching log entries' ],
-        [ '  formats    List supported log formats' ],
-        [ '  sources    List available sources' ],
-    );
-
-    if ($opt->help || !@ARGV) {
-        print $usage->text;
+    # Check for top-level flags before command
+    if (!@argv || $argv[0] eq '--help' || $argv[0] eq '-h') {
+        $self->_print_main_help;
         return 0;
     }
 
-    if ($opt->version) {
+    if ($argv[0] eq '--version' || $argv[0] eq '-V') {
         say "ptx version $VERSION";
         return 0;
     }
 
-    my $command = shift @ARGV;
+    my $command = shift @argv;
 
     my %commands = (
         query   => \&cmd_query,
@@ -70,11 +67,24 @@ sub run ($self, @argv) {
     my $handler = $commands{$command};
     unless ($handler) {
         say STDERR "Unknown command: $command";
-        print $usage->text;
+        $self->_print_main_help;
         return 1;
     }
 
-    return $handler->($self, @ARGV);
+    return $handler->($self, @argv);
+}
+
+sub _print_main_help ($self) {
+    say "ptx [-hV] <command> [args...]";
+    say "    --help (or -h)     Show this help message";
+    say "    --version (or -V)  Show version";
+    say "";
+    say "    Commands:";
+    say "      query      Execute a log query";
+    say "      extract    Extract fields with patterns";
+    say "      find       Find matching log entries";
+    say "      formats    List supported log formats";
+    say "      sources    List available sources";
 }
 
 sub cmd_query ($self, @args) {
@@ -85,11 +95,22 @@ sub cmd_query ($self, @args) {
         [ 'since|s=s',  'Time filter (e.g., 1h, 30m, 2d)' ],
         [ 'until|u=s',  'End time filter' ],
         [ 'format|f=s', 'Force log format (nginx, json, syslog)' ],
-        [ 'output|o=s', 'Output format (table, json, csv)', { default => 'table' } ],
+        [ 'output|o=s', 'Output format (table, json, csv, yaml, pretty, chart)', { default => 'table' } ],
         [ 'limit|l=i',  'Max events to return' ],
         [ 'eval|e=s',   'Perl transformation expression' ],
         [ 'verbose|v',  'Verbose output' ],
         [ 'help|h',     'Show help' ],
+        [],
+        [ 'Cloud sources:' ],
+        [ 'source=s',      'Source type (file, k8s, aws, gcp, azure)' ],
+        [ 'namespace|n=s', 'Kubernetes namespace' ],
+        [ 'pod|p=s',       'Kubernetes pod name' ],
+        [ 'selector=s',    'Kubernetes label selector' ],
+        [ 'log-group=s',   'AWS CloudWatch log group' ],
+        [ 'project=s',     'GCP project ID' ],
+        [ 'resource-group=s', 'Azure resource group' ],
+        [ 'profile=s',     'AWS profile name' ],
+        [ 'region=s',      'AWS/Azure region' ],
     );
 
     if ($opt->help) {
@@ -104,12 +125,6 @@ sub cmd_query ($self, @args) {
         return 1;
     }
 
-    my @files = @ARGV;
-    unless (@files) {
-        # Read from STDIN
-        push @files, '-';
-    }
-
     # Parse query
     my ($ast, $error) = $self->query_parser->try_parse($query_string);
     if ($error) {
@@ -117,10 +132,24 @@ sub cmd_query ($self, @args) {
         return 1;
     }
 
-    # Read and parse events
+    # Read events from appropriate source
     my @events;
-    for my $file (@files) {
-        push @events, $self->_read_events($file, $opt)->@*;
+    if ($opt->source && $opt->source ne 'file') {
+        @events = $self->_read_from_cloud($opt)->@*;
+    }
+    else {
+        my @files = @ARGV;
+        push @files, '-' unless @files;
+        for my $file (@files) {
+            push @events, $self->_read_events($file, $opt)->@*;
+        }
+    }
+
+    # Apply --eval transformation if specified
+    if ($opt->eval) {
+        my $transform = PerlText::Transform::Eval->new(code => $opt->eval);
+        my $engine = PerlText::Transform::Engine->new(transforms => [$transform]);
+        @events = $engine->apply(\@events)->@*;
     }
 
     # Execute query
@@ -128,7 +157,7 @@ sub cmd_query ($self, @args) {
     my $results  = $executor->execute($ast);
 
     # Output results
-    $self->_output_results($results, $opt->output);
+    $self->_output_results($results, $opt->output, $opt);
 
     return 0;
 }
@@ -291,19 +320,99 @@ sub _read_events ($self, $file, $opt) {
     return $parser->parse_lines(\@lines, $file);
 }
 
-sub _output_results ($self, $results, $format) {
-    my $formatter = $self->_get_formatter($format);
+sub _read_from_cloud ($self, $opt) {
+    my $source_type = $opt->source;
+
+    if ($source_type eq 'k8s') {
+        my $namespace = $opt->namespace or die "Kubernetes --namespace is required\n";
+        my $source = PerlText::Source::Kubernetes->new(
+            namespace => $namespace,
+            ($opt->pod      ? (pod      => $opt->pod)      : ()),
+            ($opt->selector ? (selector => $opt->selector) : ()),
+            ($opt->since    ? (since    => $opt->since)    : ()),
+        );
+        return $source->fetch_events;
+    }
+    elsif ($source_type eq 'aws') {
+        my $log_group = $opt->log_group or die "AWS --log-group is required\n";
+        my $source = PerlText::Source::AWS::CloudWatch->new(
+            log_group => $log_group,
+            ($opt->profile ? (profile => $opt->profile) : ()),
+            ($opt->region  ? (region  => $opt->region)  : ()),
+            ($opt->limit   ? (limit   => $opt->limit)   : ()),
+        );
+        return $source->fetch_events(
+            ($opt->since ? (start_time => $self->_parse_since($opt->since) * 1000) : ()),
+        );
+    }
+    elsif ($source_type eq 'gcp') {
+        my $project = $opt->project or die "GCP --project is required\n";
+        my $source = PerlText::Source::GCP::Logging->new(
+            project   => $project,
+            ($opt->since ? (freshness => $opt->since) : ()),
+            ($opt->limit ? (limit     => $opt->limit) : ()),
+        );
+        return $source->fetch_events;
+    }
+    elsif ($source_type eq 'azure') {
+        my $source = PerlText::Source::Azure::Monitor->new(
+            ($opt->resource_group ? (resource_group => $opt->resource_group) : ()),
+            ($opt->limit          ? (max_events     => $opt->limit)          : ()),
+        );
+        return $source->fetch_events;
+    }
+    else {
+        die "Unknown source type: $source_type\n";
+    }
+}
+
+sub _parse_since ($self, $since) {
+    # Parse time duration like "1h", "30m", "2d" into epoch timestamp
+    my $now = time();
+
+    if ($since =~ /^(\d+)h$/i) {
+        return $now - ($1 * 3600);
+    }
+    elsif ($since =~ /^(\d+)m$/i) {
+        return $now - ($1 * 60);
+    }
+    elsif ($since =~ /^(\d+)d$/i) {
+        return $now - ($1 * 86400);
+    }
+    elsif ($since =~ /^(\d+)s$/i) {
+        return $now - $1;
+    }
+    elsif ($since =~ /^\d+$/) {
+        return $now - $since;  # Assume seconds
+    }
+
+    return $now - 3600;  # Default to 1 hour
+}
+
+sub _output_results ($self, $results, $format, $opt = undef) {
+    my $formatter = $self->_get_formatter($format, $opt);
     print $formatter->format($results);
 }
 
-sub _get_formatter ($self, $format) {
+sub _get_formatter ($self, $format, $opt = undef) {
     my %formatters = (
-        table => 'PerlText::Output::Table',
-        json  => 'PerlText::Output::JSON',
-        csv   => 'PerlText::Output::CSV',
+        table  => 'PerlText::Output::Table',
+        json   => 'PerlText::Output::JSON',
+        csv    => 'PerlText::Output::CSV',
+        yaml   => 'PerlText::Output::YAML',
+        pretty => 'PerlText::Output::Pretty',
+        chart  => 'PerlText::Output::Chart',
     );
 
     my $class = $formatters{$format} // $formatters{table};
+
+    # Chart formatter may need additional config
+    if ($format eq 'chart') {
+        return $class->new(
+            value_field => 'count',
+        );
+    }
+
     return $class->new;
 }
 
