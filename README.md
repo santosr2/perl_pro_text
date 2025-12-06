@@ -1,4 +1,4 @@
-# Sift Pro
+# Sift
 
 A unified, intelligent log querying and correlation engine for the command line. Think of it as a mini Splunk/Datadog/ELK stack that searches **events**, not files.
 
