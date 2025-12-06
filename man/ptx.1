@@ -1,0 +1,242 @@
+.TH PTX 1 "December 2024" "PerlText Pro 0.01" "User Commands"
+.SH NAME
+ptx \- unified log querying and correlation engine
+.SH SYNOPSIS
+.B ptx
+[\fIOPTIONS\fR] \fICOMMAND\fR [\fIARGS\fR...]
+.SH DESCRIPTION
+.B ptx
+is a CLI tool for querying, filtering, and analyzing log files from multiple sources.
+It supports auto-detection of log formats (nginx, JSON, syslog), SQL-like queries,
+aggregations, and multiple output formats.
+.PP
+Think of it as a "mini Splunk/Datadog/ELK for the command line" \- it searches
+.B events
+not just files, with cloud support built in.
+.SH GLOBAL OPTIONS
+.TP
+.BR \-h ", " \-\-help
+Show help message and exit.
+.TP
+.BR \-V ", " \-\-version
+Show version number and exit.
+.SH COMMANDS
+.SS query
+Execute a log query with filtering, grouping, and aggregations.
+.PP
+.B ptx query
+[\fIOPTIONS\fR] \fIQUERY\fR [\fIFILES\fR...]
+.TP
+.BR \-s ", " \-\-since =\fITIME\fR
+Time filter (e.g., 1h, 30m, 2d).
+.TP
+.BR \-u ", " \-\-until =\fITIME\fR
+End time filter.
+.TP
+.BR \-f ", " \-\-format =\fIFORMAT\fR
+Force log format (nginx, json, syslog).
+.TP
+.BR \-o ", " \-\-output =\fIFORMAT\fR
+Output format: table (default), json, csv, yaml, pretty, chart.
+.TP
+.BR \-l ", " \-\-limit =\fIN\fR
+Maximum events to return.
+.TP
+.BR \-e ", " \-\-eval =\fICODE\fR
+Perl transformation expression.
+.TP
+.BR \-v ", " \-\-verbose
+Verbose output.
+.PP
+.B Cloud source options:
+.TP
+.BR \-\-source =\fITYPE\fR
+Source type (file, k8s, aws, gcp, azure).
+.TP
+.BR \-n ", " \-\-namespace =\fINS\fR
+Kubernetes namespace.
+.TP
+.BR \-p ", " \-\-pod =\fINAME\fR
+Kubernetes pod name.
+.TP
+.BR \-\-selector =\fISEL\fR
+Kubernetes label selector.
+.TP
+.BR \-\-log\-group =\fINAME\fR
+AWS CloudWatch log group.
+.TP
+.BR \-\-project =\fIID\fR
+GCP project ID.
+.TP
+.BR \-\-resource\-group =\fINAME\fR
+Azure resource group.
+.TP
+.BR \-\-profile =\fINAME\fR
+AWS profile name.
+.TP
+.BR \-\-region =\fIREGION\fR
+AWS/Azure region.
+.SS find
+Find log entries matching a pattern.
+.PP
+.B ptx find
+[\fIOPTIONS\fR] \fIPATTERN\fR [\fIFILES\fR...]
+.TP
+.BR \-f ", " \-\-format =\fIFORMAT\fR
+Force log format.
+.TP
+.BR \-o ", " \-\-output =\fIFORMAT\fR
+Output format.
+.TP
+.BR \-l ", " \-\-limit =\fIN\fR
+Maximum events.
+.SS extract
+Extract specific fields from log files.
+.PP
+.B ptx extract
+[\fIOPTIONS\fR] [\fIFILES\fR...]
+.TP
+.BR \-p ", " \-\-pattern =\fIPATTERN\fR
+Custom regex pattern with named captures.
+.TP
+.BR \-\-fields =\fIFIELDS\fR
+Comma-separated list of fields to extract.
+.TP
+.BR \-o ", " \-\-output =\fIFORMAT\fR
+Output format.
+.SS formats
+List supported log formats.
+.PP
+.B ptx formats
+.SS sources
+List available log sources.
+.PP
+.B ptx sources
+.SH QUERY LANGUAGE
+The query language supports SQL-like syntax for filtering and aggregating log events.
+.SS Basic Filtering
+.nf
+status >= 500
+method == "POST"
+ip contains "192.168"
+path matches "^/api/"
+.fi
+.SS Logical Operators
+.nf
+status >= 500 and method == "POST"
+level == "error" or level == "critical"
+.fi
+.SS Aggregations
+.nf
+status >= 500 group by ip count
+method == "POST" group by path count
+.fi
+.SS Transformations
+Use \fB\-\-eval\fR to transform fields:
+.nf
+ptx query \-\-eval '$status = int($status)' 'status >= 400' access.log
+ptx query \-\-eval '$duration_ms = $duration * 1000' 'duration > 1' app.log
+.fi
+.SH EXAMPLES
+.SS Basic queries
+.nf
+# Filter by status code
+ptx query 'status >= 500' /var/log/nginx/access.log
+
+# Filter and limit results
+ptx query \-l 10 'status >= 400' access.log
+
+# Output as JSON
+ptx query \-o json 'level == "error"' app.log
+.fi
+.SS Aggregations
+.nf
+# Count errors by IP
+ptx query 'status >= 500 group by ip count' access.log
+
+# Show as chart
+ptx query \-o chart 'status >= 400 group by status count' access.log
+.fi
+.SS Cloud sources
+.nf
+# Query Kubernetes logs
+ptx query \-\-source k8s \-n production \-\-selector app=api 'level == "error"'
+
+# Query AWS CloudWatch
+ptx query \-\-source aws \-\-log\-group /aws/lambda/my\-function 'status >= 500'
+
+# Query GCP Logging
+ptx query \-\-source gcp \-\-project my\-project 'severity >= ERROR'
+.fi
+.SS Pipelines
+.nf
+# From stdin
+cat access.log | ptx query 'status >= 500'
+
+# Combine with other tools
+ptx query \-o json 'status >= 500' access.log | jq '.ip'
+.fi
+.SH LOG FORMATS
+.TP
+.B nginx
+Nginx combined access log format.
+.TP
+.B json
+JSON or JSONL (one JSON object per line).
+.TP
+.B syslog
+BSD syslog and RFC 5424 formats.
+.SH OUTPUT FORMATS
+.TP
+.B table
+ASCII table (default).
+.TP
+.B json
+JSON Lines (one object per line).
+.TP
+.B csv
+Comma-separated values.
+.TP
+.B yaml
+YAML format.
+.TP
+.B pretty
+Colorized, human-readable output.
+.TP
+.B chart
+ASCII bar chart (for aggregated data).
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B 1
+Error (parse error, file not found, etc.).
+.SH FILES
+.TP
+.I ~/.ptxrc
+User configuration file (YAML format).
+.SH ENVIRONMENT
+.TP
+.B PTX_CONFIG
+Path to configuration file.
+.TP
+.B AWS_PROFILE
+AWS profile for CloudWatch queries.
+.TP
+.B GOOGLE_CLOUD_PROJECT
+Default GCP project.
+.TP
+.B KUBECONFIG
+Kubernetes configuration file.
+.SH SEE ALSO
+.BR jq (1),
+.BR awk (1),
+.BR grep (1),
+.BR kubectl (1),
+.BR aws (1),
+.BR gcloud (1)
+.SH AUTHOR
+Written for PerlText Pro project.
+.SH COPYRIGHT
+MIT License. See LICENSE file for details.

@@ -1,0 +1,177 @@
+#compdef ptx
+
+# Zsh completion for ptx (PerlText Pro)
+# Install: copy to a directory in your $fpath
+
+_ptx() {
+    local curcontext="$curcontext" state line
+    typeset -A opt_args
+
+    local -a commands=(
+        'query:Execute a log query'
+        'find:Find log entries matching a pattern'
+        'extract:Extract fields from logs'
+        'formats:List supported log formats'
+        'sources:List available log sources'
+    )
+
+    local -a output_formats=(
+        'table:ASCII table (default)'
+        'json:JSON Lines format'
+        'csv:Comma-separated values'
+        'yaml:YAML format'
+        'pretty:Colorized output'
+        'chart:ASCII bar chart'
+    )
+
+    local -a log_formats=(
+        'nginx:Nginx combined log format'
+        'json:JSON/JSONL format'
+        'syslog:Syslog format'
+    )
+
+    local -a source_types=(
+        'file:Local files'
+        'k8s:Kubernetes logs'
+        'aws:AWS CloudWatch'
+        'gcp:GCP Cloud Logging'
+        'azure:Azure Monitor'
+    )
+
+    local -a time_durations=(
+        '1h:1 hour'
+        '30m:30 minutes'
+        '2h:2 hours'
+        '6h:6 hours'
+        '12h:12 hours'
+        '1d:1 day'
+        '2d:2 days'
+        '7d:7 days'
+    )
+
+    _arguments -C \
+        '(-h --help)'{-h,--help}'[Show help message]' \
+        '(-V --version)'{-V,--version}'[Show version]' \
+        '1: :->command' \
+        '*:: :->args'
+
+    case $state in
+        command)
+            _describe -t commands 'ptx command' commands
+            ;;
+        args)
+            case $words[1] in
+                query)
+                    _arguments \
+                        '(-s --since)'{-s,--since}'[Time filter]:duration:->duration' \
+                        '(-u --until)'{-u,--until}'[End time filter]:duration:->duration' \
+                        '(-f --format)'{-f,--format}'[Force log format]:format:->log_format' \
+                        '(-o --output)'{-o,--output}'[Output format]:format:->output_format' \
+                        '(-l --limit)'{-l,--limit}'[Max events]:number' \
+                        '(-e --eval)'{-e,--eval}'[Perl transform]:code' \
+                        '(-v --verbose)'{-v,--verbose}'[Verbose output]' \
+                        '--source[Source type]:source:->source_type' \
+                        '(-n --namespace)'{-n,--namespace}'[K8s namespace]:namespace:->k8s_namespace' \
+                        '(-p --pod)'{-p,--pod}'[K8s pod name]:pod:->k8s_pod' \
+                        '--selector[K8s label selector]:selector' \
+                        '--log-group[AWS log group]:group:->aws_log_group' \
+                        '--project[GCP project]:project:->gcp_project' \
+                        '--resource-group[Azure resource group]:group' \
+                        '--profile[AWS profile]:profile:->aws_profile' \
+                        '--region[Cloud region]:region:->aws_region' \
+                        '(-h --help)'{-h,--help}'[Show help]' \
+                        '1:query:' \
+                        '*:file:_files'
+                    ;;
+                find)
+                    _arguments \
+                        '(-f --format)'{-f,--format}'[Force log format]:format:->log_format' \
+                        '(-o --output)'{-o,--output}'[Output format]:format:->output_format' \
+                        '(-l --limit)'{-l,--limit}'[Max events]:number' \
+                        '(-h --help)'{-h,--help}'[Show help]' \
+                        '1:pattern:' \
+                        '*:file:_files'
+                    ;;
+                extract)
+                    _arguments \
+                        '(-p --pattern)'{-p,--pattern}'[Regex pattern]:pattern' \
+                        '--fields[Fields to extract]:fields' \
+                        '(-o --output)'{-o,--output}'[Output format]:format:->output_format' \
+                        '(-h --help)'{-h,--help}'[Show help]' \
+                        '*:file:_files'
+                    ;;
+                formats|sources)
+                    # No additional arguments
+                    ;;
+            esac
+
+            case $state in
+                output_format)
+                    _describe -t formats 'output format' output_formats
+                    ;;
+                log_format)
+                    _describe -t formats 'log format' log_formats
+                    ;;
+                source_type)
+                    _describe -t sources 'source type' source_types
+                    ;;
+                duration)
+                    _describe -t durations 'time duration' time_durations
+                    ;;
+                k8s_namespace)
+                    if (( $+commands[kubectl] )); then
+                        local -a namespaces
+                        namespaces=(${(f)"$(kubectl get namespaces -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null)"})
+                        _describe -t namespaces 'namespace' namespaces
+                    fi
+                    ;;
+                k8s_pod)
+                    if (( $+commands[kubectl] )); then
+                        local ns=${opt_args[-n]:-${opt_args[--namespace]:-default}}
+                        local -a pods
+                        pods=(${(f)"$(kubectl get pods -n $ns -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null)"})
+                        _describe -t pods 'pod' pods
+                    fi
+                    ;;
+                aws_log_group)
+                    if (( $+commands[aws] )); then
+                        local -a groups
+                        groups=(${(f)"$(aws logs describe-log-groups --query 'logGroups[].logGroupName' --output text 2>/dev/null | tr '\t' '\n')"})
+                        _describe -t groups 'log group' groups
+                    fi
+                    ;;
+                aws_profile)
+                    if [[ -f ~/.aws/credentials ]]; then
+                        local -a profiles
+                        profiles=(${(f)"$(grep '^\[' ~/.aws/credentials | tr -d '[]')"})
+                        _describe -t profiles 'AWS profile' profiles
+                    fi
+                    ;;
+                aws_region)
+                    local -a regions=(
+                        'us-east-1:N. Virginia'
+                        'us-east-2:Ohio'
+                        'us-west-1:N. California'
+                        'us-west-2:Oregon'
+                        'eu-west-1:Ireland'
+                        'eu-west-2:London'
+                        'eu-central-1:Frankfurt'
+                        'ap-northeast-1:Tokyo'
+                        'ap-southeast-1:Singapore'
+                        'ap-southeast-2:Sydney'
+                    )
+                    _describe -t regions 'AWS region' regions
+                    ;;
+                gcp_project)
+                    if (( $+commands[gcloud] )); then
+                        local -a projects
+                        projects=(${(f)"$(gcloud projects list --format='value(projectId)' 2>/dev/null)"})
+                        _describe -t projects 'GCP project' projects
+                    fi
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_ptx "$@"

@@ -292,6 +292,7 @@ sub _read_events ($self, $file, $opt) {
         # Use specified format
         my %parsers = (
             nginx  => 'PerlText::Parser::Nginx',
+            apache => 'PerlText::Parser::Apache',
             json   => 'PerlText::Parser::JSON',
             syslog => 'PerlText::Parser::Syslog',
         );
@@ -315,7 +316,7 @@ sub _read_events ($self, $file, $opt) {
         return [];
     }
 
-    say STDERR "Detected format: " . $parser->format_name if $opt->verbose;
+    say STDERR "Detected format: " . $parser->format_name if $opt->can('verbose') && $opt->verbose;
 
     return $parser->parse_lines(\@lines, $file);
 }

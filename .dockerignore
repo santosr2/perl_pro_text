@@ -1,0 +1,37 @@
+# Git
+.git
+.gitignore
+
+# Build artifacts
+blib/
+Makefile
+Makefile.old
+MANIFEST
+MANIFEST.bak
+META.*
+MYMETA.*
+pm_to_blib
+*.tar.gz
+cover_db/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local config
+.env
+*.local
+
+# Test artifacts
+nytprof/
+nytprof.out
+
+# Documentation (not needed in container)
+*.md
+!README.md

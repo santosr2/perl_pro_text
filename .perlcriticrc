@@ -1,0 +1,63 @@
+# Perl::Critic configuration for PerlText Pro
+# Run: perlcritic --profile .perlcriticrc lib/
+
+severity = 3
+verbose = 8
+
+# Disable policies that conflict with modern Perl practices
+
+# We use signatures, not @_ unpacking
+[-Subroutines::ProhibitSubroutinePrototypes]
+[-Subroutines::RequireArgUnpacking]
+
+# We use postfix dereferencing ($aref->@*)
+[-References::ProhibitDoubleSigils]
+
+# Allow unless/until for readability
+[-ControlStructures::ProhibitUnlessBlocks]
+
+# Modern Perl modules don't always need explicit 1; at end
+[-Modules::RequireEndWithOne]
+
+# We use Moo, not bareword package declarations
+[-Modules::RequireExplicitPackage]
+
+# We prefer say over print
+[-InputOutput::RequireCheckedSyscalls]
+
+# Allow complex regexes when needed
+[RegularExpressions::RequireExtendedFormatting]
+minimum_regex_length_to_complain_about = 40
+
+# Allow return undef for explicit undef return
+[-Subroutines::ProhibitExplicitReturnUndef]
+
+# Allow builtin functions
+[-BuiltinFunctions::ProhibitBooleanGrep]
+
+# Modern Perl exception handling
+[-ErrorHandling::RequireCarping]
+
+# Moo handles strict/warnings via v5.36
+[-TestingAndDebugging::RequireUseStrict]
+[-TestingAndDebugging::RequireUseWarnings]
+
+# We use modern signature syntax
+[Subroutines::RequireFinalReturn]
+terminal_funcs = return die warn croak confess
+
+# Reasonable complexity limits
+[Subroutines::ProhibitExcessComplexity]
+max_mccabe = 30
+
+# Reasonable line length
+[CodeLayout::RequireTidyCode]
+perltidyrc = .perltidyrc
+
+# Allow single-character variable names in short scopes
+[Variables::ProhibitPunctuationVars]
+allow = $@ $! $? $$
+
+# Don't require POD for private subs
+[Documentation::RequirePodSections]
+lib_sections = NAME | SYNOPSIS | DESCRIPTION

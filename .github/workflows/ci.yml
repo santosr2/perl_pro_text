@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test on Perl ${{ matrix.perl }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        perl:
+          - '5.36'
+          - '5.38'
+          - '5.40'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Perl
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: ${{ matrix.perl }}
+
+      - name: Install dependencies
+        run: |
+          cpanm --notest --installdeps .
+          cpanm --notest Test2::V0 Test::Pod Test::Pod::Coverage
+
+      - name: Run tests
+        run: prove -l -r t/
+
+      - name: Check POD syntax
+        run: |
+          perl -MPod::Simple::Checker -e '
+            use File::Find;
+            my $errors = 0;
+            find(sub {
+              return unless /\.pm$/;
+              my $checker = Pod::Simple::Checker->new;
+              $checker->parse_file($_);
+              $errors++ if $checker->any_errata_seen;
+            }, "lib");
+            exit($errors ? 1 : 0);
+          '
+
+  lint:
+    name: Perl::Critic
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Perl
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: '5.36'
+
+      - name: Install Perl::Critic
+        run: cpanm --notest Perl::Critic
+
+      - name: Run Perl::Critic
+        run: perlcritic --severity 4 --verbose 8 lib/
+        continue-on-error: true
+
+  coverage:
+    name: Test Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Perl
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: '5.36'
+
+      - name: Install dependencies
+        run: |
+          cpanm --notest --installdeps .
+          cpanm --notest Devel::Cover Devel::Cover::Report::Codecov
+
+      - name: Run tests with coverage
+        run: |
+          cover -test -report html
+          cover -report text
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: cover_db/

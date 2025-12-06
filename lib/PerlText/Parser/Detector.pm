@@ -6,6 +6,7 @@ use Module::Runtime qw(use_module);
 use namespace::autoclean;
 
 use PerlText::Parser::Nginx;
+use PerlText::Parser::Apache;
 use PerlText::Parser::JSON;
 use PerlText::Parser::Syslog;
 
@@ -24,6 +25,7 @@ has sample_size => (
 sub _build_parsers ($self) {
     return [
         PerlText::Parser::Nginx->new,
+        PerlText::Parser::Apache->new,
         PerlText::Parser::JSON->new,
         PerlText::Parser::Syslog->new,
     ];

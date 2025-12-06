@@ -1,0 +1,63 @@
+# Perl::Tidy configuration for PerlText Pro
+# Run: perltidy -pro=.perltidyrc lib/**/*.pm
+
+# Maximum line length
+--maximum-line-length=100
+
+# Indentation
+--indent-columns=4
+--continuation-indentation=4
+
+# No tabs, spaces only
+--notabs
+
+# Brace style - same line opening
+--opening-brace-on-new-line
+--nobrace-left-and-indent
+
+# Cuddled else
+--cuddled-else
+--cuddled-block-list='if elsif else unless while for foreach'
+
+# Space around operators
+--space-for-semicolon
+--add-semicolons
+--nospace-after-keyword='my local our'
+
+# Parentheses handling
+--nospace-function-paren
+--space-keyword-paren
+
+# Vertical alignment
+--valign
+
+# Output to file (backup with .bak)
+--backup-and-modify-in-place
+--backup-file-extension='.bak'
+
+# No blank lines where not needed
+--noblanks-before-comments
+--maximum-consecutive-blank-lines=2
+
+# Stack opening tokens
+--stack-opening-tokens
+--stack-closing-tokens
+
+# Break long strings
+--break-before-all-operators
+
+# Hash and array formatting
+--comma-arrow-breakpoints=3
+--want-break-after-opening-token=0
+
+# Closing token placement
+--closing-token-indentation=0
+--closing-paren-indentation=0
+--closing-brace-indentation=0
+--closing-square-bracket-indentation=0
+
+# Signature-friendly formatting
+--extended-syntax
+
+# Preserve some formatting
+--keep-old-blank-lines=1

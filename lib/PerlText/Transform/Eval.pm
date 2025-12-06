@@ -2,7 +2,6 @@ package PerlText::Transform::Eval;
 use v5.36;
 use Moo;
 use Types::Standard qw(Str CodeRef);
-use Safe;
 use namespace::autoclean;
 
 has code => (
@@ -17,63 +16,26 @@ has _compiled => (
     builder => '_build_compiled',
 );
 
-has _safe => (
-    is      => 'lazy',
-    builder => '_build_safe',
-);
-
-sub _build_safe ($self) {
-    my $compartment = Safe->new;
-    $compartment->permit_only(qw(
-        :base_core
-        :base_mem
-        :base_loop
-        :base_math
-        padany
-        padsv
-        concat
-        stringify
-        uc lc ucfirst lcfirst
-        substr index rindex
-        split join
-        sprintf
-        length
-        defined
-        match subst
-        rv2av rv2hv
-        aelem helem
-        aslice hslice
-        keys values each
-        exists delete
-        push pop shift unshift
-        reverse sort
-        wantarray
-    ));
-    return $compartment;
-}
-
 sub _build_compiled ($self) {
     my $code = $self->code;
 
-    # Wrap the code to operate on $_ (the event fields hashref)
+    # Build a sub that operates on a hashref $f
+    # Variables like $status become $f->{status}
+    my $transformed = $code;
+
+    # Replace $varname with $f->{varname} for simple variable access
+    # This handles: $foo, $foo_bar, but not $f itself
+    $transformed =~ s/\$([a-zA-Z_][a-zA-Z0-9_]*)(?!\s*\{)/\$f->{$1}/g;
+
     my $wrapped = qq{
         sub {
-            my \$fields = shift;
-            local *_ = \\\$fields;
-            for my \$k (keys \%\$fields) {
-                no strict 'refs';
-                \${\$k} = \$fields->{\$k};
-            }
-            $code;
-            for my \$k (keys \%\$fields) {
-                no strict 'refs';
-                \$fields->{\$k} = \${\$k};
-            }
-            return \$fields;
+            my \$f = shift;
+            $transformed;
+            return \$f;
         }
     };
 
-    my $sub = $self->_safe->reval($wrapped);
+    my $sub = eval $wrapped;
     die "Failed to compile transform: $@" if $@;
 
     return $sub;
