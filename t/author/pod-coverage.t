@@ -15,53 +15,53 @@ if ($@) {
 
 # Modules to test for POD coverage
 my @modules = qw(
-    PerlText::Pro
-    PerlText::CLI
-    PerlText::Config
-    PerlText::Event
-    PerlText::Schema
-    PerlText::Parser::Base
-    PerlText::Parser::Detector
-    PerlText::Parser::Nginx
-    PerlText::Parser::Apache
-    PerlText::Parser::JSON
-    PerlText::Parser::Syslog
-    PerlText::Query::Parser
-    PerlText::Query::AST
-    PerlText::Query::Executor
-    PerlText::Query::Functions
-    PerlText::Transform::Engine
-    PerlText::Transform::Eval
-    PerlText::Transform::Aggregator
-    PerlText::Output::Table
-    PerlText::Output::JSON
-    PerlText::Output::CSV
-    PerlText::Output::YAML
-    PerlText::Output::Pretty
-    PerlText::Output::Chart
-    PerlText::Source::File
-    PerlText::Source::Stdin
-    PerlText::Source::Follow
-    PerlText::Source::Kubernetes
-    PerlText::Source::AWS::CloudWatch
-    PerlText::Source::GCP::Logging
-    PerlText::Source::Azure::Monitor
+    Sift::Pro
+    Sift::CLI
+    Sift::Config
+    Sift::Event
+    Sift::Schema
+    Sift::Parser::Base
+    Sift::Parser::Detector
+    Sift::Parser::Nginx
+    Sift::Parser::Apache
+    Sift::Parser::JSON
+    Sift::Parser::Syslog
+    Sift::Query::Parser
+    Sift::Query::AST
+    Sift::Query::Executor
+    Sift::Query::Functions
+    Sift::Transform::Engine
+    Sift::Transform::Eval
+    Sift::Transform::Aggregator
+    Sift::Output::Table
+    Sift::Output::JSON
+    Sift::Output::CSV
+    Sift::Output::YAML
+    Sift::Output::Pretty
+    Sift::Output::Chart
+    Sift::Source::File
+    Sift::Source::Stdin
+    Sift::Source::Follow
+    Sift::Source::Kubernetes
+    Sift::Source::AWS::CloudWatch
+    Sift::Source::GCP::Logging
+    Sift::Source::Azure::Monitor
 );
 
 # Private methods that don't need POD
 my $trustme = {
-    'PerlText::Event' => [qr/^_/],
-    'PerlText::CLI'   => [qr/^_/, qr/^cmd_/],
-    'PerlText::Parser::Nginx'   => [qr/^_/],
-    'PerlText::Parser::Apache'  => [qr/^_/],
-    'PerlText::Parser::JSON'    => [qr/^_/],
-    'PerlText::Parser::Syslog'  => [qr/^_/],
-    'PerlText::Query::Parser'   => [qr/^_/],
-    'PerlText::Query::Executor' => [qr/^_/],
-    'PerlText::Transform::Eval' => [qr/^_/],
-    'PerlText::Output::Chart'   => [qr/^_/],
-    'PerlText::Config'          => [qr/^_/],
-    'PerlText::Source::Follow'  => [qr/^_/],
+    'Sift::Event' => [qr/^_/],
+    'Sift::CLI'   => [qr/^_/, qr/^cmd_/],
+    'Sift::Parser::Nginx'   => [qr/^_/],
+    'Sift::Parser::Apache'  => [qr/^_/],
+    'Sift::Parser::JSON'    => [qr/^_/],
+    'Sift::Parser::Syslog'  => [qr/^_/],
+    'Sift::Query::Parser'   => [qr/^_/],
+    'Sift::Query::Executor' => [qr/^_/],
+    'Sift::Transform::Eval' => [qr/^_/],
+    'Sift::Output::Chart'   => [qr/^_/],
+    'Sift::Config'          => [qr/^_/],
+    'Sift::Source::Follow'  => [qr/^_/],
 };
 
 for my $module (@modules) {

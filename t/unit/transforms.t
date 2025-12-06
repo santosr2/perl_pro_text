@@ -1,19 +1,19 @@
 use v5.36;
 use Test2::V0;
-use PerlText::Event;
-use PerlText::Transform::Engine;
-use PerlText::Transform::Eval;
-use PerlText::Transform::Aggregator;
-use PerlText::Query::AST;
+use Sift::Event;
+use Sift::Transform::Engine;
+use Sift::Transform::Eval;
+use Sift::Transform::Aggregator;
+use Sift::Query::AST;
 
 subtest 'Transform::Eval basic operations' => sub {
-    my $event = PerlText::Event->new(
+    my $event = Sift::Event->new(
         timestamp => time(),
         source    => 'test',
         fields    => { status => 500, message => 'error occurred' },
     );
 
-    my $transform = PerlText::Transform::Eval->new(code => '$status = $status + 1');
+    my $transform = Sift::Transform::Eval->new(code => '$status = $status + 1');
     my $result = $transform->apply($event);
 
     is $result->get('status'), 501, 'numeric modification works';
@@ -21,26 +21,26 @@ subtest 'Transform::Eval basic operations' => sub {
 };
 
 subtest 'Transform::Eval string operations' => sub {
-    my $event = PerlText::Event->new(
+    my $event = Sift::Event->new(
         timestamp => time(),
         source    => 'test',
         fields    => { level => 'error', path => '/api/users' },
     );
 
-    my $transform = PerlText::Transform::Eval->new(code => '$level = uc($level)');
+    my $transform = Sift::Transform::Eval->new(code => '$level = uc($level)');
     my $result = $transform->apply($event);
 
     is $result->get('level'), 'ERROR', 'string uppercase works';
 };
 
 subtest 'Transform::Eval add new field' => sub {
-    my $event = PerlText::Event->new(
+    my $event = Sift::Event->new(
         timestamp => time(),
         source    => 'test',
         fields    => { duration_sec => 2.5 },
     );
 
-    my $transform = PerlText::Transform::Eval->new(code => '$duration_ms = $duration_sec * 1000');
+    my $transform = Sift::Transform::Eval->new(code => '$duration_ms = $duration_sec * 1000');
     my $result = $transform->apply($event);
 
     is $result->get('duration_ms'), 2500, 'computed field added';
@@ -49,16 +49,16 @@ subtest 'Transform::Eval add new field' => sub {
 
 subtest 'Transform::Engine pipeline' => sub {
     my @events = map {
-        PerlText::Event->new(
+        Sift::Event->new(
             timestamp => time(),
             source    => 'test',
             fields    => { value => $_ },
         )
     } (1, 2, 3);
 
-    my $engine = PerlText::Transform::Engine->new;
-    $engine->add_transform(PerlText::Transform::Eval->new(code => '$value = $value * 2'));
-    $engine->add_transform(PerlText::Transform::Eval->new(code => '$value = $value + 10'));
+    my $engine = Sift::Transform::Engine->new;
+    $engine->add_transform(Sift::Transform::Eval->new(code => '$value = $value * 2'));
+    $engine->add_transform(Sift::Transform::Eval->new(code => '$value = $value + 10'));
 
     my $results = $engine->apply(\@events);
 
@@ -70,17 +70,17 @@ subtest 'Transform::Engine pipeline' => sub {
 
 subtest 'Transform::Aggregator count' => sub {
     my @events = map {
-        PerlText::Event->new(
+        Sift::Event->new(
             timestamp => time(),
             source    => 'test',
             fields    => { ip => $_ },
         )
     } ('1.1.1.1', '1.1.1.1', '2.2.2.2', '1.1.1.1');
 
-    my $agg = PerlText::Transform::Aggregator->new(
+    my $agg = Sift::Transform::Aggregator->new(
         group_by     => ['ip'],
         aggregations => [
-            PerlText::Query::AST::Aggregation->new(func => 'count'),
+            Sift::Query::AST::Aggregation->new(func => 'count'),
         ],
     );
 
@@ -95,19 +95,19 @@ subtest 'Transform::Aggregator count' => sub {
 
 subtest 'Transform::Aggregator sum and avg' => sub {
     my @events = map {
-        PerlText::Event->new(
+        Sift::Event->new(
             timestamp => time(),
             source    => 'test',
             fields    => { category => 'A', value => $_ },
         )
     } (10, 20, 30);
 
-    my $agg = PerlText::Transform::Aggregator->new(
+    my $agg = Sift::Transform::Aggregator->new(
         group_by     => ['category'],
         aggregations => [
-            PerlText::Query::AST::Aggregation->new(func => 'count'),
-            PerlText::Query::AST::Aggregation->new(func => 'sum', field => 'value'),
-            PerlText::Query::AST::Aggregation->new(func => 'avg', field => 'value'),
+            Sift::Query::AST::Aggregation->new(func => 'count'),
+            Sift::Query::AST::Aggregation->new(func => 'sum', field => 'value'),
+            Sift::Query::AST::Aggregation->new(func => 'avg', field => 'value'),
         ],
     );
 
@@ -121,18 +121,18 @@ subtest 'Transform::Aggregator sum and avg' => sub {
 
 subtest 'Transform::Aggregator min and max' => sub {
     my @events = map {
-        PerlText::Event->new(
+        Sift::Event->new(
             timestamp => time(),
             source    => 'test',
             fields    => { status => $_ },
         )
     } (200, 404, 500, 201, 503);
 
-    my $agg = PerlText::Transform::Aggregator->new(
+    my $agg = Sift::Transform::Aggregator->new(
         group_by     => [],
         aggregations => [
-            PerlText::Query::AST::Aggregation->new(func => 'min', field => 'status'),
-            PerlText::Query::AST::Aggregation->new(func => 'max', field => 'status'),
+            Sift::Query::AST::Aggregation->new(func => 'min', field => 'status'),
+            Sift::Query::AST::Aggregation->new(func => 'max', field => 'status'),
         ],
     );
 

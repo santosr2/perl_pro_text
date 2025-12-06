@@ -1,8 +1,8 @@
 use v5.36;
 use Test2::V0;
-use PerlText::Parser::Apache;
+use Sift::Parser::Apache;
 
-my $parser = PerlText::Parser::Apache->new;
+my $parser = Sift::Parser::Apache->new;
 
 subtest 'format name' => sub {
     is $parser->format_name, 'apache', 'correct format name';

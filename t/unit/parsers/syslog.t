@@ -1,8 +1,8 @@
 use v5.36;
 use Test2::V0;
-use PerlText::Parser::Syslog;
+use Sift::Parser::Syslog;
 
-my $parser = PerlText::Parser::Syslog->new;
+my $parser = Sift::Parser::Syslog->new;
 
 subtest 'format detection' => sub {
     ok $parser->can_parse('Dec  4 10:00:00 myhost sshd[1234]: Connection from 1.2.3.4'), 'detects BSD format';

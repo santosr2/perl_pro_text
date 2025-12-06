@@ -1,4 +1,4 @@
-# PerlText Pro
+# Sift Pro
 
 A unified, intelligent log querying and correlation engine for the command line. Think of it as a mini Splunk/Datadog/ELK stack that searches **events**, not files.
 
@@ -26,29 +26,29 @@ cd perl_pro_text
 cpanm --installdeps .
 
 # Verify installation
-perl -Ilib bin/ptx --help
+perl -Ilib bin/sift --help
 ```
 
 ## Quick Start
 
 ```bash
 # Query JSON logs from stdin
-echo '{"level":"error","status":500,"message":"Connection failed"}' | ptx query 'status >= 500'
+echo '{"level":"error","status":500,"message":"Connection failed"}' | sift query 'status >= 500'
 
 # Query nginx access logs
-cat /var/log/nginx/access.log | ptx query 'status >= 400'
+cat /var/log/nginx/access.log | sift query 'status >= 400'
 
 # Filter with AND/OR conditions
-cat app.log | ptx query 'status >= 500 and service == "auth"'
+cat app.log | sift query 'status >= 500 and service == "auth"'
 
 # Use IN expressions
-cat app.log | ptx query 'status in {500, 502, 503}'
+cat app.log | sift query 'status in {500, 502, 503}'
 
 # Group and aggregate
-cat access.log | ptx query 'status >= 400 group by ip count'
+cat access.log | sift query 'status >= 400 group by ip count'
 
 # Output as JSON
-cat app.log | ptx query 'level == "error"' --output json
+cat app.log | sift query 'level == "error"' --output json
 ```
 
 ## Query Language
@@ -131,11 +131,11 @@ limit 10
 ## Commands
 
 ```bash
-ptx query <expression>   # Execute a log query
-ptx extract              # Extract fields with patterns
-ptx find                 # Find matching log entries
-ptx formats              # List supported log formats
-ptx sources              # List available log sources
+sift query <expression>   # Execute a log query
+sift extract              # Extract fields with patterns
+sift find                 # Find matching log entries
+sift formats              # List supported log formats
+sift sources              # List available log sources
 ```
 
 ## Output Formats
@@ -145,8 +145,8 @@ ptx sources              # List available log sources
 - `csv` - CSV format
 
 ```bash
-ptx query 'status >= 500' --output json
-ptx query 'status >= 500' --output csv
+sift query 'status >= 500' --output json
+sift query 'status >= 500' --output csv
 ```
 
 ## Development
@@ -159,7 +159,7 @@ prove -l -r t/
 prove -l t/unit/query_executor.t
 
 # Check syntax
-perl -c -Ilib lib/PerlText/Pro.pm
+perl -c -Ilib lib/Sift/Pro.pm
 ```
 
 ## Project Structure
@@ -167,9 +167,9 @@ perl -c -Ilib lib/PerlText/Pro.pm
 ```
 perl_pro_text/
 ├── bin/
-│   └── ptx                    # CLI entry point
+│   └── sift                    # CLI entry point
 ├── lib/
-│   └── PerlText/
+│   └── Sift/
 │       ├── Pro.pm             # Main application
 │       ├── CLI.pm             # Command-line interface
 │       ├── Event.pm           # Unified event class

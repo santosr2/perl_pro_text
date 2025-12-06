@@ -1,8 +1,8 @@
 use v5.36;
 use Test2::V0;
-use PerlText::Parser::JSON;
+use Sift::Parser::JSON;
 
-my $parser = PerlText::Parser::JSON->new;
+my $parser = Sift::Parser::JSON->new;
 
 subtest 'format_name' => sub {
     is $parser->format_name, 'json', 'format name is json';

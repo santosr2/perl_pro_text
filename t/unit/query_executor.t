@@ -1,11 +1,11 @@
 use v5.36;
 use Test2::V0;
-use PerlText::Event;
-use PerlText::Query::Parser;
-use PerlText::Query::Executor;
+use Sift::Event;
+use Sift::Query::Parser;
+use Sift::Query::Executor;
 
 sub make_event (%fields) {
-    return PerlText::Event->new(
+    return Sift::Event->new(
         timestamp => $fields{timestamp} // time(),
         source    => $fields{source} // 'test',
         fields    => \%fields,
@@ -20,11 +20,11 @@ my @events = (
     make_event(status => 502, method => 'POST', ip => '192.168.1.1', latency => 500),
 );
 
-my $parser = PerlText::Query::Parser->new;
+my $parser = Sift::Query::Parser->new;
 
 subtest 'simple comparison' => sub {
     my $ast = $parser->parse('status >= 500');
-    my $exec = PerlText::Query::Executor->new(events => \@events);
+    my $exec = Sift::Query::Executor->new(events => \@events);
     my $results = $exec->execute($ast);
 
     is scalar($results->@*), 2, 'found 2 events with status >= 500';
@@ -32,7 +32,7 @@ subtest 'simple comparison' => sub {
 
 subtest 'equality comparison' => sub {
     my $ast = $parser->parse('method == "POST"');
-    my $exec = PerlText::Query::Executor->new(events => \@events);
+    my $exec = Sift::Query::Executor->new(events => \@events);
     my $results = $exec->execute($ast);
 
     is scalar($results->@*), 2, 'found 2 POST events';
@@ -40,7 +40,7 @@ subtest 'equality comparison' => sub {
 
 subtest 'AND expression' => sub {
     my $ast = $parser->parse('status >= 500 and method == "GET"');
-    my $exec = PerlText::Query::Executor->new(events => \@events);
+    my $exec = Sift::Query::Executor->new(events => \@events);
     my $results = $exec->execute($ast);
 
     is scalar($results->@*), 1, 'found 1 event matching AND';
@@ -49,7 +49,7 @@ subtest 'AND expression' => sub {
 
 subtest 'OR expression' => sub {
     my $ast = $parser->parse('status == 404 or status == 502');
-    my $exec = PerlText::Query::Executor->new(events => \@events);
+    my $exec = Sift::Query::Executor->new(events => \@events);
     my $results = $exec->execute($ast);
 
     is scalar($results->@*), 2, 'found 2 events matching OR';
@@ -57,7 +57,7 @@ subtest 'OR expression' => sub {
 
 subtest 'NOT expression' => sub {
     my $ast = $parser->parse('not status == 200');
-    my $exec = PerlText::Query::Executor->new(events => \@events);
+    my $exec = Sift::Query::Executor->new(events => \@events);
     my $results = $exec->execute($ast);
 
     is scalar($results->@*), 3, 'found 3 non-200 events';
@@ -65,7 +65,7 @@ subtest 'NOT expression' => sub {
 
 subtest 'IN expression' => sub {
     my $ast = $parser->parse('status in {500, 502}');
-    my $exec = PerlText::Query::Executor->new(events => \@events);
+    my $exec = Sift::Query::Executor->new(events => \@events);
     my $results = $exec->execute($ast);
 
     is scalar($results->@*), 2, 'found 2 events with status in set';
@@ -73,7 +73,7 @@ subtest 'IN expression' => sub {
 
 subtest 'group by with count' => sub {
     my $ast = $parser->parse('status >= 200 group by ip count');
-    my $exec = PerlText::Query::Executor->new(events => \@events);
+    my $exec = Sift::Query::Executor->new(events => \@events);
     my $results = $exec->execute($ast);
 
     is scalar($results->@*), 3, 'found 3 groups';
@@ -85,7 +85,7 @@ subtest 'group by with count' => sub {
 
 subtest 'group by with avg' => sub {
     my $ast = $parser->parse('ip == "192.168.1.1" group by ip avg latency');
-    my $exec = PerlText::Query::Executor->new(events => \@events);
+    my $exec = Sift::Query::Executor->new(events => \@events);
     my $results = $exec->execute($ast);
 
     is scalar($results->@*), 1, 'found 1 group';
@@ -95,7 +95,7 @@ subtest 'group by with avg' => sub {
 
 subtest 'sort by field' => sub {
     my $ast = $parser->parse('status >= 200 sort by latency desc');
-    my $exec = PerlText::Query::Executor->new(events => \@events);
+    my $exec = Sift::Query::Executor->new(events => \@events);
     my $results = $exec->execute($ast);
 
     is $results->[0]->get('latency'), 500, 'highest latency first';
@@ -104,7 +104,7 @@ subtest 'sort by field' => sub {
 
 subtest 'limit results' => sub {
     my $ast = $parser->parse('status >= 200 limit 2');
-    my $exec = PerlText::Query::Executor->new(events => \@events);
+    my $exec = Sift::Query::Executor->new(events => \@events);
     my $results = $exec->execute($ast);
 
     is scalar($results->@*), 2, 'limited to 2 results';
@@ -112,7 +112,7 @@ subtest 'limit results' => sub {
 
 subtest 'combined query' => sub {
     my $ast = $parser->parse('status >= 200 group by method count sort by count desc limit 1');
-    my $exec = PerlText::Query::Executor->new(events => \@events);
+    my $exec = Sift::Query::Executor->new(events => \@events);
     my $results = $exec->execute($ast);
 
     is scalar($results->@*), 1, 'limited to 1 result';

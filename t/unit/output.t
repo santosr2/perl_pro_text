@@ -1,20 +1,20 @@
 use v5.36;
 use Test2::V0;
-use PerlText::Event;
-use PerlText::Output::Table;
-use PerlText::Output::JSON;
-use PerlText::Output::CSV;
-use PerlText::Output::YAML;
-use PerlText::Output::Pretty;
-use PerlText::Output::Chart;
+use Sift::Event;
+use Sift::Output::Table;
+use Sift::Output::JSON;
+use Sift::Output::CSV;
+use Sift::Output::YAML;
+use Sift::Output::Pretty;
+use Sift::Output::Chart;
 
 my @events = (
-    PerlText::Event->new(
+    Sift::Event->new(
         timestamp => 1733320800,  # 2024-12-04 10:00:00
         source    => 'test',
         fields    => { level => 'error', status => 500, message => 'Server error' },
     ),
-    PerlText::Event->new(
+    Sift::Event->new(
         timestamp => 1733320860,
         source    => 'test',
         fields    => { level => 'info', status => 200, message => 'OK' },
@@ -22,7 +22,7 @@ my @events = (
 );
 
 subtest 'Output::Table' => sub {
-    my $formatter = PerlText::Output::Table->new;
+    my $formatter = Sift::Output::Table->new;
     my $output = $formatter->format(\@events);
 
     ok defined $output, 'produces output';
@@ -33,7 +33,7 @@ subtest 'Output::Table' => sub {
 };
 
 subtest 'Output::JSON (JSONL default)' => sub {
-    my $formatter = PerlText::Output::JSON->new;
+    my $formatter = Sift::Output::JSON->new;
     my $output = $formatter->format(\@events);
 
     ok defined $output, 'produces output';
@@ -52,7 +52,7 @@ subtest 'Output::JSON (JSONL default)' => sub {
 };
 
 subtest 'Output::JSON (array mode)' => sub {
-    my $formatter = PerlText::Output::JSON->new(jsonl => 0);
+    my $formatter = Sift::Output::JSON->new(jsonl => 0);
     my $output = $formatter->format(\@events);
 
     ok defined $output, 'produces output';
@@ -64,7 +64,7 @@ subtest 'Output::JSON (array mode)' => sub {
 };
 
 subtest 'Output::CSV' => sub {
-    my $formatter = PerlText::Output::CSV->new;
+    my $formatter = Sift::Output::CSV->new;
     my $output = $formatter->format(\@events);
 
     ok defined $output, 'produces output';
@@ -75,7 +75,7 @@ subtest 'Output::CSV' => sub {
 };
 
 subtest 'Output::YAML' => sub {
-    my $formatter = PerlText::Output::YAML->new;
+    my $formatter = Sift::Output::YAML->new;
     my $output = $formatter->format(\@events);
 
     ok defined $output, 'produces output';
@@ -85,7 +85,7 @@ subtest 'Output::YAML' => sub {
 };
 
 subtest 'Output::Pretty' => sub {
-    my $formatter = PerlText::Output::Pretty->new(color => 0);
+    my $formatter = Sift::Output::Pretty->new(color => 0);
     my $output = $formatter->format(\@events);
 
     ok defined $output, 'produces output';
@@ -101,7 +101,7 @@ subtest 'Output::Chart with aggregated data' => sub {
         { ip => '3.3.3.3', count => 25 },
     );
 
-    my $formatter = PerlText::Output::Chart->new(
+    my $formatter = Sift::Output::Chart->new(
         value_field => 'count',
         label_field => 'ip',
         color       => 0,
@@ -119,7 +119,7 @@ subtest 'Output::Chart with aggregated data' => sub {
 
 subtest 'Output formatters handle empty input' => sub {
     for my $class (qw(Table JSON CSV YAML Pretty)) {
-        my $full_class = "PerlText::Output::$class";
+        my $full_class = "Sift::Output::$class";
         my $formatter = $full_class->new;
         my $output = $formatter->format([]);
         ok defined $output, "$class handles empty array";
@@ -133,7 +133,7 @@ subtest 'Output formatters handle hashrefs' => sub {
     );
 
     for my $class (qw(Table JSON CSV YAML)) {
-        my $full_class = "PerlText::Output::$class";
+        my $full_class = "Sift::Output::$class";
         my $formatter = $full_class->new;
         my $output = $formatter->format(\@hashes);
         ok defined $output, "$class handles hashrefs";

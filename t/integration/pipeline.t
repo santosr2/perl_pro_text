@@ -1,21 +1,21 @@
 use v5.36;
 use Test2::V0;
 use Path::Tiny;
-use PerlText::Event;
-use PerlText::Parser::Detector;
-use PerlText::Parser::Nginx;
-use PerlText::Parser::JSON;
-use PerlText::Parser::Syslog;
-use PerlText::Parser::Custom;
-use PerlText::Query::Parser;
-use PerlText::Query::Executor;
-use PerlText::Transform::Engine;
-use PerlText::Transform::Eval;
-use PerlText::Transform::Aggregator;
-use PerlText::Query::AST;
-use PerlText::Output::Table;
-use PerlText::Output::JSON;
-use PerlText::Output::CSV;
+use Sift::Event;
+use Sift::Parser::Detector;
+use Sift::Parser::Nginx;
+use Sift::Parser::JSON;
+use Sift::Parser::Syslog;
+use Sift::Parser::Custom;
+use Sift::Query::Parser;
+use Sift::Query::Executor;
+use Sift::Transform::Engine;
+use Sift::Transform::Eval;
+use Sift::Transform::Aggregator;
+use Sift::Query::AST;
+use Sift::Output::Table;
+use Sift::Output::JSON;
+use Sift::Output::CSV;
 
 # Test full pipelines: Source → Parse → Query → Transform → Output
 
@@ -29,23 +29,23 @@ subtest 'Nginx pipeline: parse → filter → output' => sub {
     );
 
     # Parse
-    my $parser = PerlText::Parser::Nginx->new;
+    my $parser = Sift::Parser::Nginx->new;
     my $events = $parser->parse_lines(\@nginx_lines);
     is scalar(@$events), 4, 'parsed 4 events';
 
     # Query: filter errors
-    my $qp = PerlText::Query::Parser->new;
+    my $qp = Sift::Query::Parser->new;
     my ($ast, $err) = $qp->try_parse('status >= 400');
     ok !$err, 'query parsed successfully';
 
-    my $executor = PerlText::Query::Executor->new(events => $events);
+    my $executor = Sift::Query::Executor->new(events => $events);
     my $filtered = $executor->execute($ast);
     is scalar(@$filtered), 2, 'filtered to 2 error events';
     is $filtered->[0]->get('status'), 401, 'first error is 401';
     is $filtered->[1]->get('status'), 500, 'second error is 500';
 
     # Output as JSON
-    my $json_out = PerlText::Output::JSON->new;
+    my $json_out = Sift::Output::JSON->new;
     my $output = $json_out->format($filtered);
     like $output, qr/"status"/, 'JSON output contains status';
 };
@@ -59,32 +59,32 @@ subtest 'JSON pipeline: parse → transform → aggregate' => sub {
     );
 
     # Parse
-    my $parser = PerlText::Parser::JSON->new;
+    my $parser = Sift::Parser::JSON->new;
     my $events = $parser->parse_lines(\@json_lines);
     is scalar(@$events), 4, 'parsed 4 events';
 
     # Transform: add latency_ms field
-    my $transform = PerlText::Transform::Eval->new(
+    my $transform = Sift::Transform::Eval->new(
         code => '$latency_ms = $latency * 1'
     );
-    my $engine = PerlText::Transform::Engine->new(transforms => [$transform]);
+    my $engine = Sift::Transform::Engine->new(transforms => [$transform]);
     my $transformed = $engine->apply($events);
     ok $transformed->[0]->get('latency_ms'), 'transform added latency_ms';
 
     # Query: filter errors
-    my $qp = PerlText::Query::Parser->new;
+    my $qp = Sift::Query::Parser->new;
     my ($ast, $err) = $qp->try_parse('level == "error"');
     ok !$err, 'query parsed';
 
-    my $executor = PerlText::Query::Executor->new(events => $transformed);
+    my $executor = Sift::Query::Executor->new(events => $transformed);
     my $errors = $executor->execute($ast);
     is scalar(@$errors), 3, 'filtered to 3 error events';
 
     # Aggregate: count by service
-    my $agg = PerlText::Transform::Aggregator->new(
+    my $agg = Sift::Transform::Aggregator->new(
         group_by     => ['service'],
         aggregations => [
-            PerlText::Query::AST::Aggregation->new(func => 'count'),
+            Sift::Query::AST::Aggregation->new(func => 'count'),
         ],
     );
     my $counted = $agg->aggregate($errors);
@@ -99,7 +99,7 @@ subtest 'Auto-detect pipeline: detect → parse → filter' => sub {
     );
 
     # Auto-detect format
-    my $detector = PerlText::Parser::Detector->new;
+    my $detector = Sift::Parser::Detector->new;
     my $parser = $detector->detect(\@mixed_lines);
     ok $parser, 'detected a parser';
     is $parser->format_name, 'json', 'detected JSON format';
@@ -108,9 +108,9 @@ subtest 'Auto-detect pipeline: detect → parse → filter' => sub {
     my $events = $parser->parse_lines(\@mixed_lines);
     is scalar(@$events), 2, 'parsed 2 events';
 
-    my $qp = PerlText::Query::Parser->new;
+    my $qp = Sift::Query::Parser->new;
     my ($ast, $err) = $qp->try_parse('level == "error"');
-    my $executor = PerlText::Query::Executor->new(events => $events);
+    my $executor = Sift::Query::Executor->new(events => $events);
     my $filtered = $executor->execute($ast);
     is scalar(@$filtered), 1, 'filtered to 1 error';
     is $filtered->[0]->get('message'), 'failed', 'correct error message';
@@ -124,7 +124,7 @@ subtest 'Custom parser pipeline' => sub {
     );
 
     # Create custom parser
-    my $parser = PerlText::Parser::Custom->new(
+    my $parser = Sift::Parser::Custom->new(
         name    => 'audit',
         pattern => qr{
             ^\[(?<timestamp>[^\]]+)\]
@@ -144,17 +144,17 @@ subtest 'Custom parser pipeline' => sub {
     is $events->[0]->get('user'), 'alice', 'extracted user';
 
     # Filter errors
-    my $qp = PerlText::Query::Parser->new;
+    my $qp = Sift::Query::Parser->new;
     my ($ast, $err) = $qp->try_parse('level == "ERROR"');
-    my $executor = PerlText::Query::Executor->new(events => $events);
+    my $executor = Sift::Query::Executor->new(events => $events);
     my $errors = $executor->execute($ast);
     is scalar(@$errors), 2, 'found 2 errors';
 
     # Aggregate by action
-    my $agg = PerlText::Transform::Aggregator->new(
+    my $agg = Sift::Transform::Aggregator->new(
         group_by     => ['action'],
         aggregations => [
-            PerlText::Query::AST::Aggregation->new(func => 'count'),
+            Sift::Query::AST::Aggregation->new(func => 'count'),
         ],
     );
     my $by_action = $agg->aggregate($errors);
@@ -170,28 +170,28 @@ subtest 'Syslog pipeline: parse → query with AND' => sub {
     );
 
     # Parse
-    my $parser = PerlText::Parser::Syslog->new;
+    my $parser = Sift::Parser::Syslog->new;
     my $events = $parser->parse_lines(\@syslog_lines);
     is scalar(@$events), 4, 'parsed 4 events';
 
     # Query: sshd on server1 (syslog uses 'hostname' not 'host')
-    my $qp = PerlText::Query::Parser->new;
+    my $qp = Sift::Query::Parser->new;
     my ($ast, $err) = $qp->try_parse('program == "sshd" and hostname == "server1"');
     ok !$err, 'complex query parsed';
 
-    my $executor = PerlText::Query::Executor->new(events => $events);
+    my $executor = Sift::Query::Executor->new(events => $events);
     my $filtered = $executor->execute($ast);
     is scalar(@$filtered), 2, 'found 2 sshd events on server1';
 };
 
 subtest 'Multiple output formats' => sub {
     my @events = (
-        PerlText::Event->new(
+        Sift::Event->new(
             timestamp => 1733320800,
             source    => 'test',
             fields    => { name => 'Alice', score => 95 },
         ),
-        PerlText::Event->new(
+        Sift::Event->new(
             timestamp => 1733320801,
             source    => 'test',
             fields    => { name => 'Bob', score => 87 },
@@ -199,17 +199,17 @@ subtest 'Multiple output formats' => sub {
     );
 
     # Table output
-    my $table = PerlText::Output::Table->new->format(\@events);
+    my $table = Sift::Output::Table->new->format(\@events);
     like $table, qr/Alice/, 'table has Alice';
     like $table, qr/Bob/, 'table has Bob';
 
     # JSON output
-    my $json = PerlText::Output::JSON->new->format(\@events);
+    my $json = Sift::Output::JSON->new->format(\@events);
     like $json, qr/"name"/, 'JSON has name field';
     like $json, qr/"score"/, 'JSON has score field';
 
     # CSV output
-    my $csv = PerlText::Output::CSV->new->format(\@events);
+    my $csv = Sift::Output::CSV->new->format(\@events);
     like $csv, qr/name/, 'CSV has name header';
     like $csv, qr/Alice/, 'CSV has Alice';
 };
@@ -224,15 +224,15 @@ subtest 'Full pipeline with aggregation query' => sub {
     );
 
     # Parse
-    my $parser = PerlText::Parser::JSON->new;
+    my $parser = Sift::Parser::JSON->new;
     my $events = $parser->parse_lines(\@json_lines);
 
     # Query with aggregation
-    my $qp = PerlText::Query::Parser->new;
+    my $qp = Sift::Query::Parser->new;
     my ($ast, $err) = $qp->try_parse('status >= 400 group by ip count');
     ok !$err, 'aggregation query parsed';
 
-    my $executor = PerlText::Query::Executor->new(events => $events);
+    my $executor = Sift::Query::Executor->new(events => $events);
     my $results = $executor->execute($ast);
 
     # Results should be aggregated hashrefs
@@ -246,7 +246,7 @@ subtest 'Full pipeline with aggregation query' => sub {
 
 subtest 'Transform chain pipeline' => sub {
     my @events = (
-        PerlText::Event->new(
+        Sift::Event->new(
             timestamp => time(),
             source    => 'test',
             fields    => { duration => '1.5', status => '200' },
@@ -254,10 +254,10 @@ subtest 'Transform chain pipeline' => sub {
     );
 
     # Chain multiple transforms
-    my $t1 = PerlText::Transform::Eval->new(code => '$duration_ms = $duration * 1000');
-    my $t2 = PerlText::Transform::Eval->new(code => '$status = int($status)');
+    my $t1 = Sift::Transform::Eval->new(code => '$duration_ms = $duration * 1000');
+    my $t2 = Sift::Transform::Eval->new(code => '$status = int($status)');
 
-    my $engine = PerlText::Transform::Engine->new(transforms => [$t1, $t2]);
+    my $engine = Sift::Transform::Engine->new(transforms => [$t1, $t2]);
     my $result = $engine->apply(\@events);
 
     is $result->[0]->get('duration_ms'), 1500, 'first transform applied';
@@ -266,7 +266,7 @@ subtest 'Transform chain pipeline' => sub {
 
 subtest 'Empty results handling' => sub {
     my @events = (
-        PerlText::Event->new(
+        Sift::Event->new(
             timestamp => time(),
             source    => 'test',
             fields    => { level => 'info' },
@@ -274,18 +274,18 @@ subtest 'Empty results handling' => sub {
     );
 
     # Query that matches nothing
-    my $qp = PerlText::Query::Parser->new;
+    my $qp = Sift::Query::Parser->new;
     my ($ast, $err) = $qp->try_parse('level == "error"');
-    my $executor = PerlText::Query::Executor->new(events => \@events);
+    my $executor = Sift::Query::Executor->new(events => \@events);
     my $filtered = $executor->execute($ast);
 
     is scalar(@$filtered), 0, 'no matches';
 
     # Output empty results
-    my $table = PerlText::Output::Table->new->format($filtered);
+    my $table = Sift::Output::Table->new->format($filtered);
     ok defined $table, 'table handles empty results';
 
-    my $json = PerlText::Output::JSON->new->format($filtered);
+    my $json = Sift::Output::JSON->new->format($filtered);
     ok defined $json, 'JSON handles empty results';
 };
 

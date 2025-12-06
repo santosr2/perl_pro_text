@@ -1,8 +1,8 @@
 use v5.36;
 use Test2::V0;
-use PerlText::Parser::Nginx;
+use Sift::Parser::Nginx;
 
-my $parser = PerlText::Parser::Nginx->new;
+my $parser = Sift::Parser::Nginx->new;
 
 subtest 'format_name' => sub {
     is $parser->format_name, 'nginx', 'format name is nginx';

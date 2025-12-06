@@ -2,14 +2,14 @@ use v5.36;
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
-    NAME             => 'PerlText::Pro',
-    VERSION_FROM     => 'lib/PerlText/Pro.pm',
-    ABSTRACT         => 'Unified, intelligent log querying and correlation engine',
-    AUTHOR           => 'Your Name <your.email@example.com>',
+    NAME             => 'Sift',
+    VERSION_FROM     => 'lib/Sift/CLI.pm',
+    ABSTRACT         => 'Log query and analysis engine - sift through your logs',
+    AUTHOR           => 'Sift Contributors',
     LICENSE          => 'perl_5',
     MIN_PERL_VERSION => '5.036',
 
-    EXE_FILES => ['bin/ptx'],
+    EXE_FILES => ['bin/sift'],
 
     PREREQ_PM => {
         'Moo'                        => '2.005',
@@ -38,8 +38,8 @@ WriteMakefile(
         resources   => {
             repository => {
                 type => 'git',
-                url  => 'https://github.com/yourusername/perl-pro-text.git',
-                web  => 'https://github.com/yourusername/perl-pro-text',
+                url  => 'https://github.com/sift-log/sift.git',
+                web  => 'https://github.com/sift-log/sift',
             },
         },
     },

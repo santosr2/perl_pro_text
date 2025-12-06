@@ -1,12 +1,12 @@
 use v5.36;
 use Test2::V0;
 use Path::Tiny;
-use PerlText::Source::File;
+use Sift::Source::File;
 
 my $fixtures_dir = path(__FILE__)->parent->parent->child('fixtures');
 
 subtest 'Source::File single file' => sub {
-    my $source = PerlText::Source::File->new(
+    my $source = Sift::Source::File->new(
         path => $fixtures_dir->child('nginx_access.log')->stringify,
     );
 
@@ -22,7 +22,7 @@ subtest 'Source::File single file' => sub {
 };
 
 subtest 'Source::File with limit' => sub {
-    my $source = PerlText::Source::File->new(
+    my $source = Sift::Source::File->new(
         path => $fixtures_dir->child('nginx_access.log')->stringify,
     );
 
@@ -31,7 +31,7 @@ subtest 'Source::File with limit' => sub {
 };
 
 subtest 'Source::File nonexistent file' => sub {
-    my $source = PerlText::Source::File->new(
+    my $source = Sift::Source::File->new(
         path => '/nonexistent/path/file.log',
     );
 
@@ -42,7 +42,7 @@ subtest 'Source::File nonexistent file' => sub {
 subtest 'Source::File glob pattern' => sub {
     skip_all 'glob test requires multiple files' unless -d $fixtures_dir;
 
-    my $source = PerlText::Source::File->new(
+    my $source = Sift::Source::File->new(
         path => $fixtures_dir->child('*.log')->stringify,
     );
 
@@ -52,7 +52,7 @@ subtest 'Source::File glob pattern' => sub {
 };
 
 subtest 'Source::File JSON logs' => sub {
-    my $source = PerlText::Source::File->new(
+    my $source = Sift::Source::File->new(
         path => $fixtures_dir->child('json_logs.jsonl')->stringify,
     );
 

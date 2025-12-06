@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Initial project structure with modern Perl 5.36 features
-- Core `PerlText::Event` class for unified log representation
+- Core `Sift::Event` class for unified log representation
 - Query language parser using Marpa::R2 with BNF grammar
 - Query executor with support for:
   - Comparison operators: `==`, `!=`, `>`, `>=`, `<`, `<=`
@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - GCP Cloud Logging
   - Azure Monitor
   - Kubernetes (kubectl logs)
-- CLI tool `ptx` with commands:
+- CLI tool `sift` with commands:
   - `query` - Execute log queries
   - `formats` - List supported formats
   - `sources` - List available sources

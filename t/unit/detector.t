@@ -1,8 +1,8 @@
 use v5.36;
 use Test2::V0;
-use PerlText::Parser::Detector;
+use Sift::Parser::Detector;
 
-my $detector = PerlText::Parser::Detector->new;
+my $detector = Sift::Parser::Detector->new;
 
 subtest 'detect nginx format' => sub {
     my @lines = (

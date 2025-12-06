@@ -1,9 +1,9 @@
 use v5.36;
 use Test2::V0;
-use PerlText::Event;
+use Sift::Event;
 
 subtest 'basic event creation' => sub {
-    my $event = PerlText::Event->new(
+    my $event = Sift::Event->new(
         timestamp => 1733310000,
         source    => 'nginx',
     );
@@ -15,7 +15,7 @@ subtest 'basic event creation' => sub {
 };
 
 subtest 'event with fields' => sub {
-    my $event = PerlText::Event->new(
+    my $event = Sift::Event->new(
         timestamp => 1733310000,
         source    => 'nginx',
         fields    => {
@@ -33,7 +33,7 @@ subtest 'event with fields' => sub {
 };
 
 subtest 'set and has_field' => sub {
-    my $event = PerlText::Event->new(
+    my $event = Sift::Event->new(
         timestamp => 1733310000,
         source    => 'test',
     );
@@ -46,7 +46,7 @@ subtest 'set and has_field' => sub {
 };
 
 subtest 'field_names' => sub {
-    my $event = PerlText::Event->new(
+    my $event = Sift::Event->new(
         timestamp => 1733310000,
         source    => 'test',
         fields    => { a => 1, b => 2, c => 3 },
@@ -57,7 +57,7 @@ subtest 'field_names' => sub {
 };
 
 subtest 'to_hash' => sub {
-    my $event = PerlText::Event->new(
+    my $event = Sift::Event->new(
         timestamp => 1733310000,
         source    => 'nginx',
         fields    => { status => 200 },
@@ -70,7 +70,7 @@ subtest 'to_hash' => sub {
 };
 
 subtest 'clone' => sub {
-    my $event = PerlText::Event->new(
+    my $event = Sift::Event->new(
         timestamp => 1733310000,
         source    => 'nginx',
         fields    => { status => 200 },
@@ -88,7 +88,7 @@ subtest 'clone' => sub {
 };
 
 subtest 'clone with overrides' => sub {
-    my $event = PerlText::Event->new(
+    my $event = Sift::Event->new(
         timestamp => 1733310000,
         source    => 'nginx',
     );

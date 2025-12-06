@@ -1,6 +1,6 @@
-# Contributing to PerlText Pro
+# Contributing to Sift Pro
 
-Thank you for your interest in contributing to PerlText Pro! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to Sift Pro! This document provides guidelines and information for contributors.
 
 ## Code of Conduct
 
@@ -57,7 +57,7 @@ cpanm --installdeps .
 prove -l -r t/
 
 # Test the CLI
-perl -Ilib bin/ptx --help
+perl -Ilib bin/sift --help
 ```
 
 ## Coding Standards
@@ -82,7 +82,7 @@ use v5.36;  # Enables strict, warnings, signatures, say
 ### Example Code Style
 
 ```perl
-package PerlText::Example;
+package Sift::Example;
 use v5.36;
 use Moo;
 use Types::Standard qw(Str Int);
@@ -117,10 +117,10 @@ sub process ($self, $input) {
 
 ```perl
 use Test2::V0;
-use PerlText::Example;
+use Sift::Example;
 
 subtest 'process handles empty input' => sub {
-    my $obj = PerlText::Example->new(name => 'test');
+    my $obj = Sift::Example->new(name => 'test');
     my $result = $obj->process('');
     is $result, undef, 'returns undef for empty input';
 };
@@ -131,7 +131,7 @@ done_testing;
 ## Project Structure
 
 ```
-lib/PerlText/
+lib/Sift/
 ├── Pro.pm              # Main application class
 ├── CLI.pm              # Command-line interface
 ├── Event.pm            # Unified log event
@@ -159,16 +159,16 @@ lib/PerlText/
 
 ## Adding a New Log Parser
 
-1. Create a new module in `lib/PerlText/Parser/`:
+1. Create a new module in `lib/Sift/Parser/`:
 
 ```perl
-package PerlText::Parser::MyFormat;
+package Sift::Parser::MyFormat;
 use v5.36;
 use Moo;
-use PerlText::Event;
+use Sift::Event;
 use namespace::autoclean;
 
-with 'PerlText::Parser::Base';
+with 'Sift::Parser::Base';
 
 has '+source_name' => (default => 'myformat');
 
@@ -185,7 +185,7 @@ sub parse ($self, $line, $source = undef) {
     # Parse the line and extract fields
     my %fields = (...);
 
-    return PerlText::Event->new(
+    return Sift::Event->new(
         timestamp => time(),
         source    => $source,
         raw       => $line,
@@ -196,13 +196,13 @@ sub parse ($self, $line, $source = undef) {
 1;
 ```
 
-2. Register in `lib/PerlText/Parser/Detector.pm`
+2. Register in `lib/Sift/Parser/Detector.pm`
 3. Add tests in `t/unit/parsers/myformat.t`
 4. Add sample data in `t/fixtures/`
 
 ## Adding a New Cloud Source
 
-1. Create a new module in `lib/PerlText/Source/`
+1. Create a new module in `lib/Sift/Source/`
 2. Implement the source interface (iterator pattern)
 3. Use CLI tools (`aws`, `gcloud`, `az`, `kubectl`) via `IPC::Run3`
 4. Add tests and documentation
