@@ -38,8 +38,8 @@ WriteMakefile(
         resources   => {
             repository => {
                 type => 'git',
-                url  => 'https://github.com/sift-log/sift.git',
-                web  => 'https://github.com/sift-log/sift',
+                url  => 'https://github.com/santosr2/sift.git',
+                web  => 'https://github.com/santosr2/sift',
             },
         },
     },
